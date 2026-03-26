@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CLOUDIA - A modern, animated, and interactive Weather Web App">
+    <title>CLOUDIA - Weather App</title>
+    <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-sun"></div>
+            <div class="loading-cloud cloud-1"></div>
+            <div class="loading-cloud cloud-2"></div>
+            <div class="loading-cloud cloud-3"></div>
+            <h2 class="loading-text">CLOUDIA</h2>
+            <p class="loading-subtext">Loading weather data...</p>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app" class="app-container">
+        <!-- Weather Background Video Layer -->
+        <div id="weather-background" class="weather-background">
+            <video id="bg-video" class="bg-video" autoplay muted loop playsinline></video>
+            <div class="video-overlay"></div>
+        </div>
+
+        <!-- Minimal Startup View (Search Only) -->
+        <div id="startup-view" class="startup-view active">
+            <div class="startup-content">
+                <h1 class="startup-title">CLOUDIA</h1>
+                <div class="startup-search-wrapper">
+                    <div class="search-input-wrapper startup-search">
+                        <input 
+                            type="text" 
+                            id="startup-city-input" 
+                            class="search-input" 
+                            placeholder="Search city..." 
+                            aria-label="Enter city name"
+                            autofocus
+                        >
+                        <button id="startup-search-btn" class="search-btn" aria-label="Search weather">
+                            <span class="icon" aria-hidden="true">&#128269;</span>
+                        </button>
+                        <button id="startup-gps-btn" class="gps-btn" aria-label="Use current location">
+                            <span class="icon" aria-hidden="true">&#128205;</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content (Hidden Initially) -->
+        <div id="main-content" class="main-content-wrapper hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="app-title">CLOUDIA</h1>
+                <div class="header-controls">
+                    <button id="sound-toggle" class="control-btn" aria-label="Toggle sound effects">
+                        <span class="icon" aria-hidden="true">&#128266;</span>
+                    </button>
+                    <button id="high-contrast-toggle" class="control-btn" aria-label="Toggle high contrast mode">
+                        <span class="icon" aria-hidden="true">&#128065;</span>
+                    </button>
+                    <button id="theme-toggle" class="control-btn" aria-label="Toggle dark/light mode">
+                        <span class="icon" aria-hidden="true">&#127769;</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Search Section -->
+            <section class="search-section">
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <input 
+                            type="text" 
+                            id="city-input" 
+                            class="search-input" 
+                            placeholder="Search city..." 
+                            aria-label="Enter city name"
+                        >
+                        <button id="search-btn" class="search-btn" aria-label="Search weather">
+                            <span class="icon" aria-hidden="true">&#128269;</span>
+                        </button>
+                        <button id="gps-btn" class="gps-btn" aria-label="Use current location">
+                            <span class="icon" aria-hidden="true">&#128205;</span>
+                        </button>
+                    </div>
+                    <div class="unit-toggle">
+                        <button id="unit-toggle" class="unit-btn active" data-unit="celsius">&deg;C</button>
+                        <button id="unit-toggle-f" class="unit-btn" data-unit="fahrenheit">&deg;F</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Current Weather Card -->
+            <section id="current-weather" class="weather-card current-weather-card">
+                <button id="favorite-btn" class="favorite-btn" aria-label="Add to favorites" title="Add to favorites">
+                    <span class="icon" aria-hidden="true">&#11088;</span>
+                </button>
+                <div class="card-content">
+                    <div class="weather-main">
+                        <div class="weather-icon-container">
+                            <img id="weather-icon" class="weather-icon" src="" alt="Weather icon">
+                        </div>
+                        <div class="weather-temp">
+                            <span id="temperature" class="temp-value">--</span>
+                            <span class="temp-unit">&deg;C</span>
+                        </div>
+                        <div class="weather-description">
+                            <h2 id="weather-desc" class="desc-text">--</h2>
+                            <p id="city-name" class="city-text">--</p>
+                        </div>
+                    </div>
+                    <div class="weather-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Feels Like</span>
+                            <span id="feels-like" class="detail-value">--&deg;</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Humidity</span>
+                            <span id="humidity" class="detail-value">--%</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Wind Speed</span>
+                            <span id="wind-speed" class="detail-value">-- km/h</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Pressure</span>
+                            <span id="pressure" class="detail-value">-- hPa</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Sunrise</span>
+                            <span id="sunrise" class="detail-value">--:--</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Sunset</span>
+                            <span id="sunset" class="detail-value">--:--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Weather Alerts -->
+            <section id="weather-alerts" class="alerts-section" style="display: none;">
+                <div class="alert-card">
+                    <h3 class="alert-title">&#9888;&#65039; Weather Alerts</h3>
+                    <div id="alerts-content" class="alerts-content"></div>
+                </div>
+            </section>
+
+            <!-- Forecast Tabs -->
+            <section class="forecast-section">
+                <div class="forecast-tabs">
+                    <button class="tab-btn active" data-tab="hourly">Hourly</button>
+                    <button class="tab-btn" data-tab="daily">Daily</button>
+                    <button class="tab-btn" data-tab="weekly">Weekly</button>
+                </div>
+                <div id="forecast-content" class="forecast-content" aria-live="polite">
+                    <!-- Forecast items will be inserted here -->
+                </div>
+            </section>
+
+            <!-- Favorite Cities -->
+            <section class="favorites-section">
+                <h3 class="section-title">Favorite Cities</h3>
+                <div id="favorites-list" class="favorites-list" role="list" aria-live="polite">
+                    <!-- Favorite cities will be inserted here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Weather Widget (Mini) -->
+        <div id="weather-widget" class="weather-widget">
+            <div class="widget-content">
+                <div class="widget-temp">
+                    <span id="widget-temp">--</span><span class="widget-unit">&deg;C</span>
+                </div>
+                <img id="widget-icon" class="widget-icon" src="" alt="Weather">
+                <div class="widget-details">
+                    <div class="widget-detail">
+                        <span class="widget-label">H:</span>
+                        <span id="widget-humidity">--%</span>
+                    </div>
+                    <div class="widget-detail">
+                        <span class="widget-label">W:</span>
+                        <span id="widget-wind">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Designed & Built by <strong>Hafsa</strong></p>
+        </footer>
+        </div>
+        <!-- End Main Content -->
+    </div>
+
+    <!-- Audio Elements for Ambient Sounds -->
+    <!-- Sounds are dynamically created by soundManager.js -->
+    <!-- Legacy audio elements kept for backward compatibility -->
+    <audio id="rain-sound" loop style="display: none;">
+        <source src="sounds/rain.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="thunder-sound" loop style="display: none;">
+        <source src="sounds/thunder.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="wind-sound" loop style="display: none;">
+        <source src="sounds/wind.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/soundManager.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/animations3d.js"></script>
+    <script src="js/animations.js"></script>
+    <script src="js/videoManager.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
