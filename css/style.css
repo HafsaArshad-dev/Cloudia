@@ -1351,6 +1351,8 @@ body {
 
 :root {
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --page-bg: #070b14;
+    --overlay-bg: rgba(8, 10, 18, 0.55);
     --text-primary-light: rgba(255, 255, 255, 0.95);
     --text-secondary-light: rgba(255, 255, 255, 0.55);
     --text-tertiary-light: rgba(255, 255, 255, 0.35);
@@ -1358,6 +1360,39 @@ body {
     --panel-border: rgba(255, 255, 255, 0.15);
     --hairline: rgba(255, 255, 255, 0.12);
     --hover-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] {
+    --page-bg: #dbe5f2;
+    --overlay-bg: rgba(230, 236, 246, 0.58);
+    --text-primary-light: rgba(15, 20, 35, 0.95);
+    --text-secondary-light: rgba(25, 34, 56, 0.64);
+    --text-tertiary-light: rgba(31, 42, 68, 0.48);
+    --panel-bg: rgba(255, 255, 255, 0.46);
+    --panel-border: rgba(18, 28, 48, 0.2);
+    --hairline: rgba(18, 28, 48, 0.2);
+}
+
+[data-theme="dark"] {
+    --page-bg: #070b14;
+    --overlay-bg: rgba(8, 10, 18, 0.55);
+    --text-primary-light: rgba(255, 255, 255, 0.95);
+    --text-secondary-light: rgba(255, 255, 255, 0.55);
+    --text-tertiary-light: rgba(255, 255, 255, 0.35);
+    --panel-bg: rgba(255, 255, 255, 0.08);
+    --panel-border: rgba(255, 255, 255, 0.15);
+    --hairline: rgba(255, 255, 255, 0.12);
+}
+
+[data-contrast="high"] {
+    --page-bg: #000000;
+    --overlay-bg: rgba(0, 0, 0, 0.78);
+    --text-primary-light: #ffffff;
+    --text-secondary-light: #ffff00;
+    --text-tertiary-light: #ffff00;
+    --panel-bg: rgba(0, 0, 0, 0.88);
+    --panel-border: rgba(255, 255, 0, 0.82);
+    --hairline: rgba(255, 255, 0, 0.82);
 }
 
 body,
@@ -1370,7 +1405,7 @@ textarea {
 
 body {
     color: var(--text-primary-light);
-    background: #070b14;
+    background: var(--page-bg);
 }
 
 .video-overlay {
@@ -1386,7 +1421,7 @@ body {
     content: "";
     position: fixed;
     inset: 0;
-    background: rgba(8, 10, 18, 0.55);
+    background: var(--overlay-bg);
     z-index: 0;
     pointer-events: none;
 }
@@ -1472,6 +1507,22 @@ body {
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: var(--hover-shadow);
     transform: none;
+}
+
+[data-theme="dark"] #theme-toggle {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary-light);
+}
+
+[data-theme="light"] #theme-toggle {
+    background: rgba(20, 28, 45, 0.1);
+    color: var(--text-primary-light);
+}
+
+[data-contrast="high"] #high-contrast-toggle {
+    background: rgba(255, 255, 0, 0.2);
+    color: #ffffff;
+    border-color: rgba(255, 255, 0, 0.9);
 }
 
 .search-section {
@@ -1709,125 +1760,67 @@ body {
     padding: 4px;
 }
 
-.forecast-content[data-view="hourly"] {
+.forecast-content {
     display: flex;
     gap: 10px;
     overflow-x: auto;
     padding-bottom: 6px;
 }
 
-.forecast-content[data-view="hourly"] .forecast-item {
-    min-width: 68px;
+.forecast-content .forecast-item {
     background: rgba(255, 255, 255, 0.06);
     border: 0.5px solid rgba(255, 255, 255, 0.12);
     border-radius: 14px;
     padding: 14px 10px;
+    min-width: 68px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 8px;
     transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-.forecast-content[data-view="hourly"] .forecast-item:hover {
+.forecast-content .forecast-item:hover {
     transform: translateY(-2px);
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: var(--hover-shadow);
 }
 
-.forecast-content[data-view="hourly"] .forecast-time {
-    margin-bottom: 0;
-}
-
-.forecast-content[data-view="hourly"] .forecast-icon {
+.forecast-content .forecast-icon {
     width: 32px;
     height: 32px;
     margin: 2px auto;
 }
 
-.forecast-content[data-view="hourly"] .forecast-temp {
+.forecast-content .forecast-temp {
     margin: 0;
     font-size: 16px;
     font-weight: 400;
     color: var(--text-primary-light);
 }
 
-.forecast-content[data-view="hourly"] .forecast-desc {
-    font-size: 12px;
-    color: var(--text-secondary-light);
-    text-transform: none;
-}
-
-.forecast-content[data-view="hourly"] .forecast-meta {
-    margin-top: 0;
-    color: var(--text-tertiary-light);
-}
-
-.forecast-list {
-    background: rgba(255, 255, 255, 0.06);
-    border: 0.5px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    overflow: hidden;
-}
-
-.forecast-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-}
-
-.forecast-row + .forecast-row {
-    border-top: 0.5px solid rgba(255, 255, 255, 0.08);
-}
-
-.forecast-row-left {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.forecast-row-center {
-    display: flex;
-    justify-content: center;
-}
-
-.forecast-row .forecast-icon {
-    width: 30px;
-    height: 30px;
-    margin: 0;
-}
-
-.forecast-row-right {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-}
-
-.forecast-row .forecast-temp {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--text-primary-light);
-}
-
-.forecast-row .forecast-temp-range {
+.forecast-content .forecast-temp-range {
     gap: 10px;
     font-size: 13px;
     color: var(--text-primary-light);
 }
 
-.forecast-row .forecast-desc {
-    font-size: 13px;
+.forecast-content .forecast-desc {
+    font-size: 12px;
     color: var(--text-secondary-light);
     text-transform: none;
 }
 
-.forecast-row .forecast-meta {
+.forecast-content .forecast-meta {
+    margin-top: 0;
     color: var(--text-tertiary-light);
+}
+
+.forecast-content[data-view="daily"] .forecast-item,
+.forecast-content[data-view="weekly"] .forecast-item {
+    min-width: 150px;
+    padding: 14px 12px;
 }
 
 .favorites-section {
@@ -2004,20 +1997,6 @@ body {
     .sun-times {
         flex-direction: column;
         gap: 10px;
-    }
-
-    .forecast-row {
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-areas:
-            "left center"
-            "right right";
-    }
-
-    .forecast-row-left { grid-area: left; }
-    .forecast-row-center { grid-area: center; }
-    .forecast-row-right {
-        grid-area: right;
-        align-items: flex-start;
     }
 
     .weather-widget {
