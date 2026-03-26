@@ -8,7 +8,7 @@
     <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@300;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -58,9 +58,9 @@
         </div>
 
         <!-- Main Content (Hidden Initially) -->
-        <div id="main-content" class="main-content-wrapper hidden">
+        <div id="main-content" class="main-content-wrapper dashboard-container hidden">
         <!-- Header -->
-        <header class="header">
+        <header class="header dashboard-block block-1">
             <div class="header-content">
                 <h1 class="app-title">CLOUDIA</h1>
                 <div class="header-controls">
@@ -80,7 +80,7 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Search Section -->
-            <section class="search-section">
+            <section class="search-section dashboard-block block-2">
                 <div class="search-container">
                     <div class="search-input-wrapper">
                         <input 
@@ -105,7 +105,7 @@
             </section>
 
             <!-- Current Weather Card -->
-            <section id="current-weather" class="weather-card current-weather-card">
+            <section id="current-weather" class="weather-card current-weather-card dashboard-block block-3">
                 <button id="favorite-btn" class="favorite-btn" aria-label="Add to favorites" title="Add to favorites">
                     <span class="icon" aria-hidden="true">&#11088;</span>
                 </button>
@@ -115,7 +115,7 @@
                             <img id="weather-icon" class="weather-icon" src="" alt="Weather icon">
                         </div>
                         <div class="weather-temp">
-                            <span id="temperature" class="temp-value">--</span>
+                            <span id="current-temp" class="temp-value">--</span>
                             <span class="temp-unit">&deg;C</span>
                         </div>
                         <div class="weather-description">
@@ -123,6 +123,7 @@
                             <p id="city-name" class="city-text">--</p>
                         </div>
                     </div>
+                    <div class="hero-divider" aria-hidden="true"></div>
                     <div class="weather-details">
                         <div class="detail-item">
                             <span class="detail-label">Feels Like</span>
@@ -140,6 +141,8 @@
                             <span class="detail-label">Pressure</span>
                             <span id="pressure" class="detail-value">-- hPa</span>
                         </div>
+                    </div>
+                    <div class="sun-times">
                         <div class="detail-item">
                             <span class="detail-label">Sunrise</span>
                             <span id="sunrise" class="detail-value">--:--</span>
@@ -153,7 +156,7 @@
             </section>
 
             <!-- Weather Alerts -->
-            <section id="weather-alerts" class="alerts-section" style="display: none;">
+            <section id="weather-alerts" class="alerts-section dashboard-block block-4" style="display: none;">
                 <div class="alert-card">
                     <h3 class="alert-title">&#9888;&#65039; Weather Alerts</h3>
                     <div id="alerts-content" class="alerts-content"></div>
@@ -161,7 +164,7 @@
             </section>
 
             <!-- Forecast Tabs -->
-            <section class="forecast-section">
+            <section class="forecast-section dashboard-block block-5">
                 <div class="forecast-tabs">
                     <button class="tab-btn active" data-tab="hourly">Hourly</button>
                     <button class="tab-btn" data-tab="daily">Daily</button>
@@ -173,7 +176,7 @@
             </section>
 
             <!-- Favorite Cities -->
-            <section class="favorites-section">
+            <section class="favorites-section dashboard-block block-6">
                 <h3 class="section-title">Favorite Cities</h3>
                 <div id="favorites-list" class="favorites-list" role="list" aria-live="polite">
                     <!-- Favorite cities will be inserted here -->
@@ -182,7 +185,7 @@
         </main>
 
         <!-- Weather Widget (Mini) -->
-        <div id="weather-widget" class="weather-widget">
+        <div id="weather-widget" class="weather-widget dashboard-block block-7">
             <div class="widget-content">
                 <div class="widget-temp">
                     <span id="widget-temp">--</span><span class="widget-unit">&deg;C</span>

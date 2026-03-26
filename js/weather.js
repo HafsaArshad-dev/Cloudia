@@ -142,7 +142,7 @@ class WeatherHandler {
         const unitSymbol = this.getUnitSymbol(unit);
         const windDisplay = this.getWindDisplay(data.wind.speed, unit);
 
-        const tempElement = document.getElementById('temperature');
+        const tempElement = document.getElementById('current-temp') || document.getElementById('temperature');
         if (tempElement) {
             tempElement.textContent = Math.round(data.main.temp);
         }
@@ -262,27 +262,39 @@ class WeatherHandler {
                 : `Humidity ${item.humidityAvg}%`;
 
             return `
-                <div class="forecast-time">${this.formatRelativeDate(item.dt, timezone)}</div>
-                <img src="${iconUrl}" alt="${description}" class="forecast-icon">
-                <div class="forecast-temp-range">
-                    <span>H ${Math.round(item.tempMax)}${unitSymbol}</span>
-                    <span>L ${Math.round(item.tempMin)}${unitSymbol}</span>
+                <div class="forecast-row-left">
+                    <span class="forecast-time">${this.formatRelativeDate(item.dt, timezone)}</span>
+                    <span class="forecast-desc">${description}</span>
                 </div>
-                <div class="forecast-desc">${description}</div>
-                <div class="forecast-meta">${metaLine}</div>
+                <div class="forecast-row-center">
+                    <img src="${iconUrl}" alt="${description}" class="forecast-icon">
+                </div>
+                <div class="forecast-row-right">
+                    <div class="forecast-temp-range">
+                        <span>H ${Math.round(item.tempMax)}${unitSymbol}</span>
+                        <span>L ${Math.round(item.tempMin)}${unitSymbol}</span>
+                    </div>
+                    <span class="forecast-meta">${metaLine}</span>
+                </div>
             `;
         }
 
         return `
-            <div class="forecast-time">${this.formatDate(item.dt, timezone)}</div>
-            <img src="${iconUrl}" alt="${description}" class="forecast-icon">
-            <div class="forecast-temp">${Math.round(item.tempAvg)}${unitSymbol} avg</div>
-            <div class="forecast-temp-range">
-                <span>H ${Math.round(item.tempMax)}${unitSymbol}</span>
-                <span>L ${Math.round(item.tempMin)}${unitSymbol}</span>
+            <div class="forecast-row-left">
+                <span class="forecast-time">${this.formatDate(item.dt, timezone)}</span>
+                <span class="forecast-desc">${description}</span>
             </div>
-            <div class="forecast-desc">${description}</div>
-            <div class="forecast-meta">Humidity ${item.humidityAvg}% - Wind ${windDisplay.value} ${windDisplay.label}</div>
+            <div class="forecast-row-center">
+                <img src="${iconUrl}" alt="${description}" class="forecast-icon">
+            </div>
+            <div class="forecast-row-right">
+                <div class="forecast-temp">${Math.round(item.tempAvg)}${unitSymbol} avg</div>
+                <div class="forecast-temp-range">
+                    <span>H ${Math.round(item.tempMax)}${unitSymbol}</span>
+                    <span>L ${Math.round(item.tempMin)}${unitSymbol}</span>
+                </div>
+                <span class="forecast-meta">Humidity ${item.humidityAvg}% - Wind ${windDisplay.value} ${windDisplay.label}</span>
+            </div>
         `;
     }
 
@@ -307,12 +319,27 @@ class WeatherHandler {
             return;
         }
 
+        if (type === 'hourly') {
+            items.forEach(item => {
+                const forecastItem = document.createElement('div');
+                forecastItem.className = 'forecast-item';
+                forecastItem.innerHTML = this.buildForecastMarkup(item, type, unit, timezone);
+                forecastContent.appendChild(forecastItem);
+            });
+            return;
+        }
+
+        const forecastList = document.createElement('div');
+        forecastList.className = 'forecast-list';
+
         items.forEach(item => {
-            const forecastItem = document.createElement('div');
-            forecastItem.className = 'forecast-item';
-            forecastItem.innerHTML = this.buildForecastMarkup(item, type, unit, timezone);
-            forecastContent.appendChild(forecastItem);
+            const forecastRow = document.createElement('div');
+            forecastRow.className = 'forecast-row';
+            forecastRow.innerHTML = this.buildForecastMarkup(item, type, unit, timezone);
+            forecastList.appendChild(forecastRow);
         });
+
+        forecastContent.appendChild(forecastList);
     }
 
     displayAlerts(alerts) {
