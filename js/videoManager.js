@@ -53,6 +53,7 @@ class WeatherVideoManager {
         // Initialize video element
         if (this.videoElement) {
             this.setupVideoElement();
+            this.preloadVideos();
         }
     }
 
@@ -62,6 +63,11 @@ class WeatherVideoManager {
         this.videoElement.setAttribute('muted', '');
         this.videoElement.setAttribute('loop', '');
         this.videoElement.setAttribute('playsinline', '');
+        this.videoElement.muted = true;
+        this.videoElement.defaultMuted = true;
+        this.videoElement.loop = true;
+        this.videoElement.playsInline = true;
+        this.videoElement.preload = 'auto';
         
         // Handle video load errors gracefully
         this.videoElement.addEventListener('error', (e) => {
@@ -151,10 +157,20 @@ class WeatherVideoManager {
 
     // Change video with smooth transition
     changeVideo(videoPath, weatherMain, sunrise = null, sunset = null) {
-        if (!this.videoElement) return;
+        if (!this.videoElement || !videoPath) return;
+
+        // Recover if a previous load error temporarily hid the video element.
+        this.videoElement.style.display = 'block';
+        const hasActiveVideo = Boolean(this.currentVideo || this.videoElement.currentSrc);
         
         // If same video, don't change
         if (this.currentVideo === videoPath && this.videoElement.src) {
+            if (this.videoElement.paused) {
+                this.videoElement.play().catch(e => {
+                    console.warn('Video autoplay prevented:', e);
+                });
+            }
+            this.fadeInVideo();
             return;
         }
 
@@ -167,30 +183,45 @@ class WeatherVideoManager {
         this.isTransitioning = true;
         this.currentVideo = videoPath;
 
-        // Fade out current video
-        this.fadeOutVideo(() => {
-            // Change video source
-            this.videoElement.src = videoPath;
-            
-            // Load new video
-            this.videoElement.load();
-            
-            // Play when ready and fade in
-            const handleCanPlay = () => {
+        const swapSourceAndPlay = () => {
+            let playbackStarted = false;
+
+            const startPlayback = () => {
+                if (playbackStarted) return;
+                playbackStarted = true;
+
                 this.videoElement.play().catch(e => {
                     console.warn('Video autoplay prevented:', e);
+                }).finally(() => {
+                    setTimeout(() => {
+                        this.fadeInVideo();
+                    }, 60);
                 });
-                // Fade in after a brief moment
-                setTimeout(() => {
-                    this.fadeInVideo();
-                }, 100);
             };
-            
-            this.videoElement.addEventListener('canplay', handleCanPlay, { once: true });
-            
-            // Also handle loadeddata as fallback
-            this.videoElement.addEventListener('loadeddata', handleCanPlay, { once: true });
-        });
+
+            // Attach listeners before load() so the first ready event is never missed.
+            this.videoElement.addEventListener('canplay', startPlayback, { once: true });
+            this.videoElement.addEventListener('loadeddata', startPlayback, { once: true });
+
+            this.videoElement.src = videoPath;
+            this.videoElement.load();
+
+            if (this.videoElement.readyState >= 2) {
+                startPlayback();
+            }
+
+            // Fallback for browsers that skip ready events under cached/media edge-cases.
+            setTimeout(() => {
+                startPlayback();
+            }, 800);
+        };
+
+        // First load after search should appear quickly; skip unnecessary fade out.
+        if (hasActiveVideo) {
+            this.fadeOutVideo(swapSourceAndPlay);
+        } else {
+            swapSourceAndPlay();
+        }
     }
 
     // Fade out video
@@ -279,4 +310,3 @@ class WeatherVideoManager {
 
 // Create singleton instance
 const weatherVideoManager = new WeatherVideoManager();
-
