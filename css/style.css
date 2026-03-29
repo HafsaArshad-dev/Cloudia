@@ -1560,6 +1560,23 @@ body {
     transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+.gps-btn {
+    width: auto;
+    min-width: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 12px;
+}
+
+.gps-btn .btn-text {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
 .search-btn:hover,
 .gps-btn:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -2021,5 +2038,15 @@ body {
     .unit-btn,
     .tab-btn {
         padding: 5px 10px;
+    }
+
+    .gps-btn {
+        padding: 0 10px;
+        gap: 5px;
+    }
+
+    .gps-btn .btn-text {
+        font-size: 10px;
+        letter-spacing: 0.06em;
     }
 }
