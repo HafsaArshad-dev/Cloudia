@@ -2050,3 +2050,314 @@ body {
         letter-spacing: 0.06em;
     }
 }
+
+/* ============================================
+   Startup Favorites + Autocomplete + Responsive Refinements
+   ============================================ */
+
+.startup-content {
+    width: min(100%, 860px);
+    padding: 0 24px;
+}
+
+.startup-search-wrapper {
+    width: 100%;
+}
+
+.autocomplete-host {
+    position: relative;
+    overflow: visible !important;
+}
+
+.search-input-wrapper.startup-search {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+}
+
+.search-suggestions {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 6px;
+    border: 0.5px solid rgba(255, 255, 255, 0.18);
+    border-radius: 14px;
+    background: rgba(8, 10, 18, 0.92);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+    z-index: 40;
+}
+
+.search-suggestions.hidden {
+    display: none;
+}
+
+.search-suggestion-btn {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.search-suggestion-btn:hover,
+.search-suggestion-btn:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary-light);
+}
+
+.search-suggestion-label {
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+.search-suggestion-source {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary-light);
+    white-space: nowrap;
+}
+
+.startup-favorites {
+    width: 100%;
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.startup-favorites.hidden {
+    display: none;
+}
+
+.startup-favorites-label {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-secondary-light);
+}
+
+.startup-favorites-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.startup-favorite-chip {
+    border: 0.5px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary-light);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    min-height: 36px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.startup-favorite-chip:hover,
+.startup-favorite-chip:focus-visible {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.28);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 1024px) {
+    .app-container {
+        padding: 16px;
+    }
+
+    .startup-content {
+        width: min(100%, 760px);
+        padding: 0 20px;
+    }
+
+    .startup-title {
+        font-size: clamp(2.2rem, 7vw, 3.1rem);
+        margin-bottom: 24px;
+    }
+
+    .dashboard-container {
+        padding: 20px 24px;
+    }
+
+    .header-content {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+
+    .header-controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .search-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-input-wrapper {
+        width: 100%;
+    }
+
+    .unit-toggle {
+        width: max-content;
+        align-self: flex-start;
+    }
+
+    .weather-main {
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .weather-details {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 14px;
+    }
+
+    .weather-details .detail-item:nth-child(n + 2) {
+        border-left: none;
+        padding-left: 0;
+    }
+
+    .weather-details .detail-item:nth-child(2n) {
+        border-left: 0.5px solid var(--hairline);
+        padding-left: 20px;
+    }
+
+    .favorites-list {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+
+    .favorite-item {
+        flex: 0 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .startup-content {
+        padding: 0 18px;
+    }
+
+    .dashboard-container {
+        padding: 16px 18px;
+    }
+
+    .header-content {
+        align-items: flex-start;
+    }
+
+    .header-controls {
+        justify-content: flex-start;
+    }
+
+    .control-btn,
+    .unit-btn,
+    .tab-btn,
+    .search-btn,
+    .gps-btn {
+        min-height: 36px;
+    }
+
+    .weather-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .sun-times {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .forecast-tabs {
+        display: flex;
+        overflow-x: auto;
+        gap: 6px;
+        padding-bottom: 4px;
+    }
+
+    .tab-btn {
+        flex: 0 0 auto;
+    }
+
+    .search-suggestions {
+        max-height: 220px;
+    }
+
+    .startup-favorites-list {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-container {
+        padding: 12px;
+    }
+
+    .startup-content {
+        padding: 0 14px;
+    }
+
+    .startup-title {
+        font-size: clamp(1.8rem, 9vw, 2.4rem);
+        letter-spacing: 0.16em;
+    }
+
+    .dashboard-container {
+        padding: 14px;
+    }
+
+    .search-input-wrapper {
+        padding: 4px 4px 4px 8px;
+    }
+
+    .search-input {
+        font-size: 16px;
+    }
+
+    .search-suggestions {
+        top: calc(100% + 6px);
+    }
+
+    .weather-details {
+        grid-template-columns: 1fr;
+    }
+
+    .weather-details .detail-item,
+    .weather-details .detail-item:nth-child(2n) {
+        border-left: none;
+        padding-left: 0;
+    }
+
+    .startup-favorite-chip {
+        padding: 8px 12px;
+        min-height: 34px;
+        font-size: 10px;
+    }
+
+    .favorite-item {
+        padding: 8px 12px;
+    }
+}

@@ -1,28 +1,36 @@
 // CLOUDIA - Main Application
 class CloudiaApp {
     constructor() {
-        this.debounceTimer = null;
         this.currentTab = 'hourly';
         this.lastQuery = null;
+        this.maxSuggestions = 6;
+        this.autocompleteTimers = {
+            startup: null,
+            main: null
+        };
+        this.autocompleteRequestIds = {
+            startup: 0,
+            main: 0
+        };
         this.init();
     }
 
     init() {
         // Show loading screen initially
         weatherAnimations.showLoadingScreen();
-        
+
         // Setup event listeners
         this.setupEventListeners();
 
         // Sync persisted UI state
         this.syncUiState();
-        
+
         // Initialize startup 3D background
         weatherAnimations.initStartup3D();
-        
+
         // Hide loading screen after duration
         weatherAnimations.hideLoadingScreen();
-        
+
         // Don't auto-load weather - wait for user search
     }
 
@@ -45,16 +53,6 @@ class CloudiaApp {
             startupGpsBtn.addEventListener('click', () => this.handleStartupGPS());
         }
 
-        // Startup view search input
-        const startupCityInput = document.getElementById('startup-city-input');
-        if (startupCityInput) {
-            startupCityInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.handleStartupSearch();
-                }
-            });
-        }
-
         // Main view search button
         const searchBtn = document.getElementById('search-btn');
         if (searchBtn) {
@@ -67,24 +65,8 @@ class CloudiaApp {
             gpsBtn.addEventListener('click', () => this.handleGPS());
         }
 
-        // Main view search input (Enter key and debounce)
-        const cityInput = document.getElementById('city-input');
-        if (cityInput) {
-            cityInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.handleSearch();
-                }
-            });
-
-            // Debounced search
-            cityInput.addEventListener('input', () => {
-                clearTimeout(this.debounceTimer);
-                this.debounceTimer = setTimeout(() => {
-                    // Optional: Auto-search on input (commented out for now)
-                    // this.handleSearch();
-                }, CONFIG.DEBOUNCE_DELAY);
-            });
-        }
+        this.setupSearchInputEvents('startup-city-input', 'startup', () => this.handleStartupSearch());
+        this.setupSearchInputEvents('city-input', 'main', () => this.handleSearch());
 
         // Theme toggle
         const themeToggle = document.getElementById('theme-toggle');
@@ -134,6 +116,238 @@ class CloudiaApp {
                 this.switchForecastTab(tab);
             });
         });
+
+        document.addEventListener('click', (event) => this.handleDocumentClick(event));
+    }
+
+    setupSearchInputEvents(inputId, view, onEnter) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                onEnter();
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                this.hideSuggestions(view);
+            }
+        });
+
+        input.addEventListener('input', () => {
+            this.handleAutocompleteInput(view);
+        });
+
+        input.addEventListener('focus', () => {
+            this.handleAutocompleteInput(view);
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(() => this.hideSuggestions(view), 120);
+        });
+    }
+
+    getAutocompleteContext(view) {
+        if (view === 'startup') {
+            return {
+                inputId: 'startup-city-input',
+                suggestionsId: 'startup-suggestions',
+                wrapperId: 'startup-search-wrapper',
+                startup: true
+            };
+        }
+
+        return {
+            inputId: 'city-input',
+            suggestionsId: 'main-suggestions',
+            wrapperId: 'main-search-wrapper',
+            startup: false
+        };
+    }
+
+    async handleAutocompleteInput(view) {
+        const context = this.getAutocompleteContext(view);
+        const input = document.getElementById(context.inputId);
+        if (!input) return;
+
+        const query = input.value.trim();
+        if (query.length < 2) {
+            this.hideSuggestions(view);
+            return;
+        }
+
+        clearTimeout(this.autocompleteTimers[view]);
+        this.autocompleteTimers[view] = setTimeout(() => {
+            this.loadCitySuggestions(view, query);
+        }, CONFIG.DEBOUNCE_DELAY);
+    }
+
+    async loadCitySuggestions(view, query) {
+        const context = this.getAutocompleteContext(view);
+        const input = document.getElementById(context.inputId);
+        if (!input) return;
+
+        const requestId = ++this.autocompleteRequestIds[view];
+        let suggestions = [];
+
+        try {
+            suggestions = await this.buildMergedSuggestions(query);
+        } catch (error) {
+            suggestions = [];
+        }
+
+        const queryNow = input.value.trim();
+        if (requestId !== this.autocompleteRequestIds[view] || queryNow !== query.trim()) {
+            return;
+        }
+
+        this.renderSuggestions(view, suggestions);
+    }
+
+    async buildMergedSuggestions(query) {
+        const trimmedQuery = String(query || '').trim();
+        if (trimmedQuery.length < 2) {
+            return [];
+        }
+
+        const normalizedQuery = trimmedQuery.toLowerCase();
+        const favoriteMatches = this.getFavoriteCities()
+            .filter(city => city.toLowerCase().includes(normalizedQuery))
+            .map(city => ({
+                label: city,
+                query: city,
+                source: 'favorite'
+            }));
+
+        let liveMatches = [];
+        try {
+            liveMatches = await weatherAPI.searchCities(trimmedQuery, this.maxSuggestions);
+        } catch (error) {
+            liveMatches = [];
+        }
+
+        const merged = [];
+        const seen = new Set();
+        const pushUnique = (item) => {
+            const key = String(item.query || item.label || '').trim().toLowerCase();
+            if (!key || seen.has(key)) {
+                return;
+            }
+
+            seen.add(key);
+            merged.push(item);
+        };
+
+        favoriteMatches.forEach(pushUnique);
+        liveMatches.forEach(item => pushUnique({
+            ...item,
+            source: 'live'
+        }));
+
+        return merged.slice(0, this.maxSuggestions);
+    }
+
+    renderSuggestions(view, suggestions) {
+        const context = this.getAutocompleteContext(view);
+        const suggestionsElement = document.getElementById(context.suggestionsId);
+        if (!suggestionsElement) return;
+
+        suggestionsElement.innerHTML = '';
+
+        if (!suggestions.length) {
+            this.hideSuggestions(view);
+            return;
+        }
+
+        suggestions.forEach(suggestion => {
+            const button = document.createElement('button');
+            button.className = 'search-suggestion-btn';
+            button.type = 'button';
+            button.setAttribute('role', 'option');
+            button.setAttribute('aria-label', `Use ${suggestion.label}`);
+
+            const label = document.createElement('span');
+            label.className = 'search-suggestion-label';
+            label.textContent = suggestion.label;
+            button.appendChild(label);
+
+            if (suggestion.source === 'favorite') {
+                const badge = document.createElement('span');
+                badge.className = 'search-suggestion-source';
+                badge.textContent = 'Saved';
+                button.appendChild(badge);
+            }
+
+            button.addEventListener('mousedown', (event) => {
+                event.preventDefault();
+            });
+
+            button.addEventListener('click', () => {
+                this.selectSuggestion(view, suggestion);
+            });
+
+            suggestionsElement.appendChild(button);
+        });
+
+        suggestionsElement.classList.remove('hidden');
+    }
+
+    async selectSuggestion(view, suggestion) {
+        const context = this.getAutocompleteContext(view);
+        const input = document.getElementById(context.inputId);
+        if (input) {
+            input.value = suggestion.label;
+        }
+
+        this.hideSuggestions(view);
+
+        if (context.startup) {
+            await this.loadWeather(suggestion.query, true);
+            return;
+        }
+
+        await this.loadWeather(suggestion.query, false);
+    }
+
+    hideSuggestions(view) {
+        const context = this.getAutocompleteContext(view);
+        const suggestionsElement = document.getElementById(context.suggestionsId);
+        if (!suggestionsElement) return;
+
+        suggestionsElement.innerHTML = '';
+        suggestionsElement.classList.add('hidden');
+    }
+
+    hideAllSuggestions() {
+        this.hideSuggestions('startup');
+        this.hideSuggestions('main');
+    }
+
+    handleDocumentClick(event) {
+        ['startup', 'main'].forEach(view => {
+            const context = this.getAutocompleteContext(view);
+            const wrapper = document.getElementById(context.wrapperId);
+            if (wrapper && !wrapper.contains(event.target)) {
+                this.hideSuggestions(view);
+            }
+        });
+    }
+
+    getFavoriteCities() {
+        try {
+            const favorites = JSON.parse(localStorage.getItem('favoriteCities') || '[]');
+            if (!Array.isArray(favorites)) {
+                return [];
+            }
+
+            return favorites
+                .map(city => String(city || '').trim())
+                .filter(Boolean);
+        } catch (error) {
+            return [];
+        }
     }
 
     async initializeWeather() {
@@ -158,7 +372,9 @@ class CloudiaApp {
     async handleStartupSearch() {
         const cityInput = document.getElementById('startup-city-input');
         const city = cityInput?.value.trim();
-        
+
+        this.hideSuggestions('startup');
+
         if (!city) {
             this.showError('Please enter a city name');
             return;
@@ -173,6 +389,7 @@ class CloudiaApp {
             return;
         }
 
+        this.hideSuggestions('startup');
         const gpsBtn = document.getElementById('startup-gps-btn');
         if (gpsBtn) {
             gpsBtn.disabled = true;
@@ -183,7 +400,7 @@ class CloudiaApp {
                 await this.loadWeatherByCoords(position.coords.latitude, position.coords.longitude, true);
                 if (gpsBtn) gpsBtn.disabled = false;
             },
-            async (error) => {
+            async () => {
                 this.showError('Unable to retrieve your location. Please try again or search for a city.');
                 if (gpsBtn) gpsBtn.disabled = false;
             },
@@ -194,7 +411,9 @@ class CloudiaApp {
     async handleSearch() {
         const cityInput = document.getElementById('city-input');
         const city = cityInput?.value.trim();
-        
+
+        this.hideSuggestions('main');
+
         if (!city) {
             this.showError('Please enter a city name');
             return;
@@ -209,6 +428,7 @@ class CloudiaApp {
             return;
         }
 
+        this.hideSuggestions('main');
         const gpsBtn = document.getElementById('gps-btn');
         if (gpsBtn) {
             gpsBtn.disabled = true;
@@ -219,7 +439,7 @@ class CloudiaApp {
                 await this.loadWeatherByCoords(position.coords.latitude, position.coords.longitude);
                 if (gpsBtn) gpsBtn.disabled = false;
             },
-            async (error) => {
+            async () => {
                 this.showError('Unable to retrieve your location. Please try again or search for a city.');
                 if (gpsBtn) gpsBtn.disabled = false;
             },
@@ -246,10 +466,11 @@ class CloudiaApp {
 
     async loadWeatherData({ getCurrent, getForecast, isStartup = false }) {
         try {
+            this.hideAllSuggestions();
             this.showLoading();
-            
+
             const units = CONFIG.UNITS[weatherHandler.currentUnit];
-            
+
             // Fetch current weather and forecast in parallel
             const [currentData, forecastData] = await Promise.all([
                 getCurrent(units),
@@ -315,7 +536,7 @@ class CloudiaApp {
 
     switchForecastTab(tab) {
         this.currentTab = tab;
-        
+
         // Update tab buttons
         const tabButtons = document.querySelectorAll('.tab-btn');
         tabButtons.forEach(btn => {
@@ -371,11 +592,16 @@ class CloudiaApp {
                 button.disabled = disabled;
             }
         });
+
+        const interactiveButtons = document.querySelectorAll('.startup-favorite-chip, .search-suggestion-btn');
+        interactiveButtons.forEach(button => {
+            button.disabled = disabled;
+        });
     }
 
     showError(message) {
         this.hideError(); // Remove existing error
-        
+
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
         errorDiv.id = 'error-message';
@@ -393,7 +619,7 @@ class CloudiaApp {
         const mainContentWrapper = document.getElementById('main-content');
         const mainContent = document.querySelector('.main-content');
         const startupView = document.getElementById('startup-view');
-        
+
         if (mainContent && mainContentWrapper && !mainContentWrapper.classList.contains('hidden')) {
             mainContent.insertBefore(errorDiv, mainContent.firstChild);
         } else if (startupView) {
@@ -412,9 +638,13 @@ class CloudiaApp {
 
     // Favorites management
     loadFavorites() {
-        const favorites = JSON.parse(localStorage.getItem('favoriteCities') || '[]');
+        const favorites = this.getFavoriteCities();
+        this.renderMainFavorites(favorites);
+        this.renderStartupFavorites(favorites);
+    }
+
+    renderMainFavorites(favorites) {
         const favoritesList = document.getElementById('favorites-list');
-        
         if (!favoritesList) return;
 
         favoritesList.innerHTML = '';
@@ -442,9 +672,9 @@ class CloudiaApp {
                 this.loadWeather(city);
             });
 
-            cityButton.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
+            cityButton.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
                     this.loadWeather(city);
                 }
             });
@@ -466,8 +696,47 @@ class CloudiaApp {
         });
     }
 
+    renderStartupFavorites(favorites) {
+        const startupFavorites = document.getElementById('startup-favorites');
+        const startupFavoritesList = document.getElementById('startup-favorites-list');
+        if (!startupFavorites || !startupFavoritesList) return;
+
+        startupFavoritesList.innerHTML = '';
+
+        if (favorites.length === 0) {
+            startupFavorites.classList.add('hidden');
+            return;
+        }
+
+        startupFavorites.classList.remove('hidden');
+
+        favorites.forEach(city => {
+            const chip = document.createElement('button');
+            chip.className = 'startup-favorite-chip';
+            chip.type = 'button';
+            chip.textContent = city;
+            chip.setAttribute('role', 'listitem');
+            chip.setAttribute('aria-label', `Load weather for ${city}`);
+
+            chip.addEventListener('click', () => {
+                this.hideSuggestions('startup');
+                this.loadWeather(city, true);
+            });
+
+            chip.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.hideSuggestions('startup');
+                    this.loadWeather(city, true);
+                }
+            });
+
+            startupFavoritesList.appendChild(chip);
+        });
+    }
+
     addToFavorites(city) {
-        const favorites = JSON.parse(localStorage.getItem('favoriteCities') || '[]');
+        const favorites = this.getFavoriteCities();
         if (!favorites.includes(city)) {
             favorites.push(city);
             localStorage.setItem('favoriteCities', JSON.stringify(favorites));
@@ -476,21 +745,21 @@ class CloudiaApp {
     }
 
     removeFromFavorites(city) {
-        const favorites = JSON.parse(localStorage.getItem('favoriteCities') || '[]');
-        const filtered = favorites.filter(c => c !== city);
+        const favorites = this.getFavoriteCities();
+        const filtered = favorites.filter(savedCity => savedCity !== city);
         localStorage.setItem('favoriteCities', JSON.stringify(filtered));
         this.loadFavorites();
     }
 
     toggleFavorite() {
         if (!weatherHandler.currentData) return;
-        
+
         const city = weatherHandler.currentData.name;
-        const favorites = JSON.parse(localStorage.getItem('favoriteCities') || '[]');
+        const favorites = this.getFavoriteCities();
         const isFavorite = favorites.includes(city);
-        
+
         const favoriteBtn = document.getElementById('favorite-btn');
-        
+
         if (isFavorite) {
             this.removeFromFavorites(city);
             if (favoriteBtn) {
@@ -510,11 +779,11 @@ class CloudiaApp {
 
     updateFavoriteButton() {
         if (!weatherHandler.currentData) return;
-        
+
         const city = weatherHandler.currentData.name;
-        const favorites = JSON.parse(localStorage.getItem('favoriteCities') || '[]');
+        const favorites = this.getFavoriteCities();
         const isFavorite = favorites.includes(city);
-        
+
         const favoriteBtn = document.getElementById('favorite-btn');
         if (favoriteBtn) {
             if (isFavorite) {
@@ -536,4 +805,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Make app globally available for debugging
     window.cloudiaApp = app;
 });
-

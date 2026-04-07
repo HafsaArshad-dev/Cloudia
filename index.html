@@ -38,7 +38,7 @@
             <div class="startup-content">
                 <h1 class="startup-title">CLOUDIA</h1>
                 <div class="startup-search-wrapper">
-                    <div class="search-input-wrapper startup-search">
+                    <div id="startup-search-wrapper" class="search-input-wrapper startup-search autocomplete-host">
                         <input 
                             type="text" 
                             id="startup-city-input" 
@@ -54,7 +54,12 @@
                             <span class="icon" aria-hidden="true">&#128205;</span>
                             <span class="btn-text">Location</span>
                         </button>
+                        <div id="startup-suggestions" class="search-suggestions hidden" role="listbox" aria-label="City suggestions"></div>
                     </div>
+                </div>
+                <div id="startup-favorites" class="startup-favorites hidden">
+                    <p class="startup-favorites-label">Favorite Cities</p>
+                    <div id="startup-favorites-list" class="startup-favorites-list" role="list" aria-live="polite"></div>
                 </div>
             </div>
         </div>
@@ -84,7 +89,7 @@
             <!-- Search Section -->
             <section class="search-section dashboard-block block-2">
                 <div class="search-container">
-                    <div class="search-input-wrapper">
+                    <div id="main-search-wrapper" class="search-input-wrapper autocomplete-host">
                         <input 
                             type="text" 
                             id="city-input" 
@@ -99,6 +104,7 @@
                             <span class="icon" aria-hidden="true">&#128205;</span>
                             <span class="btn-text">Location</span>
                         </button>
+                        <div id="main-suggestions" class="search-suggestions hidden" role="listbox" aria-label="City suggestions"></div>
                     </div>
                     <div class="unit-toggle">
                         <button id="unit-toggle" class="unit-btn active" data-unit="celsius">&deg;C</button>

@@ -153,6 +153,62 @@ class WeatherAPI {
         }
     }
 
+    async searchCities(query, limit = 6) {
+        const normalizedQuery = String(query || '').trim();
+        if (normalizedQuery.length < 2) {
+            return [];
+        }
+
+        const safeLimit = Math.min(Math.max(Number(limit) || 6, 1), 10);
+        const cacheKey = this.buildCacheKey('city_search', [normalizedQuery, safeLimit]);
+        const cached = this.getCached(cacheKey);
+        if (cached) return cached;
+
+        const url = new URL('https://api.openweathermap.org/geo/1.0/direct');
+        url.searchParams.append('q', normalizedQuery);
+        url.searchParams.append('limit', String(safeLimit));
+        url.searchParams.append('appid', this.apiKey);
+
+        const data = await this.fetchData(url.toString());
+        if (!Array.isArray(data)) {
+            return [];
+        }
+
+        const seenLabels = new Set();
+        const suggestions = [];
+
+        data.forEach(item => {
+            const cityName = String(item?.name || '').trim();
+            if (!cityName) {
+                return;
+            }
+
+            const state = String(item?.state || '').trim();
+            const country = String(item?.country || '').trim();
+            const labelParts = [cityName];
+            if (state) labelParts.push(state);
+            if (country) labelParts.push(country);
+
+            const label = labelParts.join(', ');
+            const dedupeKey = label.toLowerCase();
+            if (seenLabels.has(dedupeKey)) {
+                return;
+            }
+
+            seenLabels.add(dedupeKey);
+            suggestions.push({
+                name: cityName,
+                state,
+                country,
+                label,
+                query: country ? `${cityName},${country}` : cityName
+            });
+        });
+
+        this.setCache(cacheKey, suggestions);
+        return suggestions;
+    }
+
     async getCurrentWeather(city, units = 'metric') {
         const cacheKey = this.buildCacheKey('current', city, units);
         const cached = this.getCached(cacheKey);
