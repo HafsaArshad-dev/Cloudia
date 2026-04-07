@@ -4,6 +4,53 @@ class CloudiaApp {
         this.currentTab = 'hourly';
         this.lastQuery = null;
         this.maxSuggestions = 6;
+        this.popularCities = [
+            { city: 'London', country: 'GB' },
+            { city: 'New York', country: 'US' },
+            { city: 'Los Angeles', country: 'US' },
+            { city: 'Chicago', country: 'US' },
+            { city: 'Toronto', country: 'CA' },
+            { city: 'Vancouver', country: 'CA' },
+            { city: 'Dubai', country: 'AE' },
+            { city: 'Abu Dhabi', country: 'AE' },
+            { city: 'Riyadh', country: 'SA' },
+            { city: 'Doha', country: 'QA' },
+            { city: 'Istanbul', country: 'TR' },
+            { city: 'Paris', country: 'FR' },
+            { city: 'Berlin', country: 'DE' },
+            { city: 'Madrid', country: 'ES' },
+            { city: 'Rome', country: 'IT' },
+            { city: 'Tokyo', country: 'JP' },
+            { city: 'Seoul', country: 'KR' },
+            { city: 'Beijing', country: 'CN' },
+            { city: 'Shanghai', country: 'CN' },
+            { city: 'Singapore', country: 'SG' },
+            { city: 'Bangkok', country: 'TH' },
+            { city: 'Mumbai', country: 'IN' },
+            { city: 'Delhi', country: 'IN' },
+            { city: 'Bengaluru', country: 'IN' },
+            { city: 'Lahore', country: 'PK' },
+            { city: 'Karachi', country: 'PK' },
+            { city: 'Islamabad', country: 'PK' },
+            { city: 'Faisalabad', country: 'PK' },
+            { city: 'Peshawar', country: 'PK' },
+            { city: 'Sydney', country: 'AU' },
+            { city: 'Melbourne', country: 'AU' },
+            { city: 'Auckland', country: 'NZ' }
+        ];
+        this.popularCityBoosts = new Map([
+            ['london', 90],
+            ['new york', 90],
+            ['paris', 80],
+            ['tokyo', 80],
+            ['dubai', 80],
+            ['karachi', 78],
+            ['lahore', 76],
+            ['islamabad', 74],
+            ['mumbai', 74],
+            ['delhi', 72],
+            ['sydney', 70]
+        ]);
         this.autocompleteTimers = {
             startup: null,
             main: null
@@ -221,6 +268,8 @@ class CloudiaApp {
                 source: 'favorite'
             }));
 
+        const popularMatches = this.getPopularSuggestions(trimmedQuery);
+
         let liveMatches = [];
         try {
             liveMatches = await weatherAPI.searchCities(trimmedQuery, this.maxSuggestions);
@@ -241,12 +290,111 @@ class CloudiaApp {
         };
 
         favoriteMatches.forEach(pushUnique);
+        popularMatches.forEach(pushUnique);
         liveMatches.forEach(item => pushUnique({
             ...item,
             source: 'live'
         }));
 
-        return merged.slice(0, this.maxSuggestions);
+        const ranked = merged
+            .map(item => ({
+                ...item,
+                __score: this.getSuggestionScore(item, trimmedQuery)
+            }))
+            .sort((first, second) => {
+                if (second.__score !== first.__score) {
+                    return second.__score - first.__score;
+                }
+
+                return String(first.label).localeCompare(String(second.label));
+            })
+            .slice(0, this.maxSuggestions)
+            .map(({ __score, ...item }) => item);
+
+        return ranked;
+    }
+
+    getPopularSuggestions(query) {
+        const normalizedQuery = String(query || '').trim().toLowerCase();
+        if (normalizedQuery.length < 2) {
+            return [];
+        }
+
+        return this.popularCities
+            .filter(item => {
+                const city = item.city.toLowerCase();
+                return city.startsWith(normalizedQuery) || city.includes(normalizedQuery);
+            })
+            .map(item => ({
+                name: item.city,
+                country: item.country,
+                label: `${item.city}, ${item.country}`,
+                query: `${item.city},${item.country}`,
+                source: 'popular'
+            }));
+    }
+
+    getSuggestionCityName(suggestion) {
+        if (suggestion && suggestion.name) {
+            return String(suggestion.name).trim();
+        }
+
+        const label = String(suggestion?.label || '').trim();
+        if (!label) {
+            return '';
+        }
+
+        return label.split(',')[0].trim();
+    }
+
+    getSuggestionScore(suggestion, query) {
+        const normalizedQuery = String(query || '').trim().toLowerCase();
+        const cityName = this.getSuggestionCityName(suggestion).toLowerCase();
+        const label = String(suggestion?.label || '').toLowerCase();
+        const queryValue = String(suggestion?.query || '').toLowerCase();
+        let score = 0;
+
+        if (!normalizedQuery || !label) {
+            return score;
+        }
+
+        if (cityName === normalizedQuery) {
+            score += 420;
+        }
+
+        if (cityName.startsWith(normalizedQuery)) {
+            score += 300;
+        } else if (cityName.includes(normalizedQuery)) {
+            score += 140;
+        }
+
+        if (label.startsWith(normalizedQuery)) {
+            score += 210;
+        } else if (label.includes(` ${normalizedQuery}`)) {
+            score += 120;
+        } else if (label.includes(normalizedQuery)) {
+            score += 90;
+        }
+
+        const cityTokens = cityName.split(/[\s-]+/).filter(Boolean);
+        if (cityTokens.some(token => token.startsWith(normalizedQuery))) {
+            score += 160;
+        }
+
+        if (queryValue.startsWith(normalizedQuery)) {
+            score += 110;
+        }
+
+        if (suggestion.source === 'favorite') {
+            score += 32;
+        }
+
+        if (suggestion.source === 'popular') {
+            score += 24;
+        }
+
+        score += this.popularCityBoosts.get(cityName) || 0;
+        return score;
     }
 
     renderSuggestions(view, suggestions) {
